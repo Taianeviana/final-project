@@ -1,0 +1,10 @@
+https://stackoverflow.com/questions/3100985/plot-with-custom-text-for-x-axis-points
+
+https://stackoverflow.com/questions/18265935/python-create-list-with-numbers-between-2-values
+
+https://matplotlib.org/gallery/shapes_and_collections/scatter.html
+
+https://stackoverflow.com/questions/72899/how-do-i-sort-a-list-of-dictionaries-by-a-value-of-the-dictionary-in-python
+
+https://datascience.stackexchange.com/questions/10773/how-does-selectkbest-work
+
