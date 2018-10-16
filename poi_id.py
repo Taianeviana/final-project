@@ -347,6 +347,6 @@ plt.show()
 
 ###Método final utilizdo com os parâmetros definidos pelo gridSearch
 
-features_list_new = features_list_new[:18]
+features_list_new = features_list_new[:17]
 clf= RandomForestClassifier(bootstrap = False, criterion = 'gini', max_features= 'auto', n_estimators= 100)
 dump_classifier_and_data(clf, my_dataset, features_list_new)
