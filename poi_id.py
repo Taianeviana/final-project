@@ -297,8 +297,8 @@ clf_tree= GridSearchCV(clf_tree,parameters, cv=5, scoring = 'f1')
 ### http://scikit-learn.org/stable/modules/generated/sklearn.cross_validation.StratifiedShuffleSplit.html
 
 # Example starting point. Try investigating other evaluation techniques!
-
-
+#Gridsearch
+'''
 clf_rfc_gs_f1 = []
 clf_tree_f1 = []
 for key in data_dict:
@@ -363,7 +363,7 @@ plt.ylabel('F1 score')
 plt.title('F1 score x k best Features')
 plt.legend();
 plt.show()
-
+'''
 ### Task 6: Dump your classifier, dataset, and features_list so anyone can
 ### check your results. You do not need to change anything below, but make sure
 ### that the version of poi_id.py that you submit can be run on its own and
