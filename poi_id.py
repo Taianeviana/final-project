@@ -15,6 +15,7 @@ from sklearn.feature_selection import SelectKBest
 from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
 
 ### Task 1: Select what features you'll use.
 ### features_list is a list of strings, each of which is a feature name.
@@ -243,6 +244,29 @@ labels, features = targetFeatureSplit(data)
 ### http://scikit-learn.org/stable/modules/pipeline.html
 
 # Provided to give you a starting point. Try a variety of classifiers.
+#Valor com parâmetros definido pela analise a seguir
+######
+features_train, features_test, labels_train, labels_test = \
+train_test_split(features, labels, test_size= 0.2, random_state=42)
+		
+data = featureFormat(data_dict, features_list_new[:16])
+labels, features = targetFeatureSplit(data)
+	
+features_train, features_test, labels_train, labels_test = \
+train_test_split(features, labels, test_size=0.2, random_state=42)
+clf_rfc_gs = RandomForestClassifier(bootstrap = False, criterion = 'gini', max_features= 'auto', n_estimators= 25, random_state=42)
+clf_rfc_gs.fit(features_train, labels_train)	
+
+print("RandomForestClassifier com os parâmetros da avaliação:")
+
+pred1 = clf_rfc_gs.predict(features_test)
+acc = accuracy_score(labels_test, pred1)
+print(pred1)
+print('Accuracy: ' + str(acc))
+print('Precision: ', precision_score(labels_test, pred1))
+print('Recall: ', recall_score(labels_test, pred1))
+print('F1_score: ', f1_score(labels_test, pred1))
+
 
 from sklearn.ensemble import RandomForestClassifier
 
@@ -347,6 +371,6 @@ plt.show()
 
 ###Método final utilizdo com os parâmetros definidos pelo gridSearch
 
-features_list_new = features_list_new[:17]
-clf= RandomForestClassifier(bootstrap = False, criterion = 'gini', max_features= 'auto', n_estimators= 100)
-dump_classifier_and_data(clf, my_dataset, features_list_new)
+features_list_new = features_list_new[:16]
+clf= RandomForestClassifier(bootstrap = False, criterion = 'gini', max_features= 'auto', n_estimators= 25, random_state=42)
+dump_classifier_and_data(clf, data_dict, features_list_new)
