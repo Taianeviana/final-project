@@ -12,9 +12,10 @@
 
 import pickle
 import sys
-from sklearn.model_selection import StratifiedShuffleSplit
+from sklearn.cross_validation import StratifiedShuffleSplit
 sys.path.append("../tools/")
 from feature_format import featureFormat, targetFeatureSplit
+from sklearn.preprocessing import StandardScaler
 
 PERF_FORMAT_STRING = "\
 \tAccuracy: {:>0.{display_precision}f}\tPrecision: {:>0.{display_precision}f}\t\
@@ -42,7 +43,7 @@ def test_classifier(clf, dataset, feature_list, folds = 1000):
         for jj in test_idx:
             features_test.append( features[jj] )
             labels_test.append( labels[jj] )
-        
+ 
         ### fit the classifier using training set, and test on test set
         clf.fit(features_train, labels_train)
         predictions = clf.predict(features_test)

@@ -3,13 +3,18 @@
 import sys
 import pickle
 import matplotlib.pyplot as plt
+import warnings
+import operator
 sys.path.append("../tools/")
+warnings.filterwarnings('ignore')
 
 from feature_format import featureFormat, targetFeatureSplit
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from tester import dump_classifier_and_data
-from sklearn.feature_selection import SelectKBest, f_classif
+from sklearn.feature_selection import SelectKBest
 from sklearn.model_selection import GridSearchCV
-from sklearn.metrics import accuracy_score, precision_score, recall_score
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+from sklearn.model_selection import train_test_split
 
 ### Task 1: Select what features you'll use.
 ### features_list is a list of strings, each of which is a feature name.
@@ -58,7 +63,34 @@ print("Total de POIs", POI)
 print("Total de não POIs", NPOI)
 print("Total de features", len(data_dict['METTS MARK'].values()))
 
-### Características com muitos valores faltantes
+### Features com muitos valores faltantes
+nas = {}
+for feature in features_list:
+    for key in data_dict:
+        if data_dict[key][feature] == 'NaN':
+            if feature not in nas.keys():
+                nas[feature] = 0
+            nas[feature] += 1
+
+valid_records_per_feature = sorted((nas).items(), key = operator.itemgetter(1), reverse = True)
+print(valid_records_per_feature)
+
+x = []
+y = []
+print(len(nas))
+for i in range(len(valid_records_per_feature)):
+    x.append(valid_records_per_feature[i][0])
+    y.append(valid_records_per_feature[i][1]/len(data_dict))
+    
+plt.bar(x, y)
+plt.xticks(rotation=90)
+plt.xlabel('Data Column')
+plt.ylabel('Proportion (%)')
+plt.title('Missing Data')
+plt.show()
+
+
+
 ### Identificar amostras que possuem muitos atributos nulos
 
 data_remove = []
@@ -68,10 +100,27 @@ for i in data_dict:
 		
 print(data_remove)		
 
-#Características das amostras
 #print("WODRASKA JOHN", data_dict["WODRASKA JOHN"])	
 #print("LOCKHART EUGENE E", data_dict["LOCKHART EUGENE E"])	
 #print("THE TRAVEL AGENCY IN THE PARK'", data_dict["THE TRAVEL AGENCY IN THE PARK"])	
+
+v_nas = []
+name_nas = []
+for key in data_remove:
+    n = 0
+    for feature in features_list:
+        if data_dict[key][feature] == 'NaN':
+            n += 1
+    v_nas.append(n/(len(features_list)))
+    name_nas.append(key)
+	
+	
+plt.bar(name_nas, v_nas)
+plt.xticks(rotation=45)
+plt.xlabel('Data Column')
+plt.ylabel('Proportion (%)')
+plt.title('Missing Data')
+plt.show()
 	
 
 ### Task 2: Remove outliers
@@ -163,9 +212,9 @@ my_dataset = data_dict
 data = featureFormat(my_dataset, features_list, sort_keys = True)
 labels, features = targetFeatureSplit(data)
 
-###Seleção de features
+###Ordenação de features
 
-best_features = SelectKBest(k=12)
+best_features = SelectKBest()
 best_features.fit(features, labels)
 
 list_best_features = []
@@ -177,12 +226,12 @@ newlist = sorted(list_best_features, key=lambda k: k['score'], reverse=True)
 
 
 features_list_new = []
-for i in newlist[:12]:
+for i in newlist:
     features_list_new.append(i["feature"])
 features_list_new.insert(0, 'poi')	
 print(features_list_new)	
 
-###labels e features spmene com as 12 features selecionadas
+###labels e features
 data = featureFormat(data_dict, features_list_new)
 labels, features = targetFeatureSplit(data)
 
@@ -205,14 +254,15 @@ parameters= {
             }
 
 clf_rfc = RandomForestClassifier(random_state=0)
-clf_rfc_gs = GridSearchCV(clf_rfc, parameters, cv=5)
+clf_rfc_gs = GridSearchCV(clf_rfc, parameters, cv=5, scoring = 'f1')
 
 from sklearn.tree import DecisionTreeClassifier
 
 parameters= {'min_samples_split' : range(10,500,20),
             "criterion": ["gini", "entropy"]}
 clf_tree= DecisionTreeClassifier(random_state=0)
-clf_tree= GridSearchCV(clf_tree,parameters, cv=5)
+clf_tree= GridSearchCV(clf_tree,parameters, cv=5, scoring = 'f1')
+
 
 
 ### Task 5: Tune your classifier to achieve better than .3 precision and recall 
@@ -223,41 +273,80 @@ clf_tree= GridSearchCV(clf_tree,parameters, cv=5)
 ### http://scikit-learn.org/stable/modules/generated/sklearn.cross_validation.StratifiedShuffleSplit.html
 
 # Example starting point. Try investigating other evaluation techniques!
-from sklearn.model_selection import train_test_split
-features_train, features_test, labels_train, labels_test = \
-    train_test_split(features, labels, test_size=0.15, random_state=42)
+
+
+clf_rfc_gs_f1 = []
+clf_tree_f1 = []
+for key in data_dict:
+    for feature in features_list_new:
+        if data_dict[key][feature] == 'NaN':
+            data_dict[key][feature] = 0
+            
+
+m = list(range(3, len(features_list_new)))
+for k in m:
+
+    print(k)
+    data = featureFormat(data_dict, features_list_new[:k])
+    labels, features = targetFeatureSplit(data)
+    
+    scaler = StandardScaler()
+    scaler.fit(features)
 	
-clf_rfc_gs.fit(features_train, labels_train)	
-
-print("RandomForestClassifier:")
-print("Best Params", clf_rfc_gs.best_params_)
-
-pred1 = clf_rfc_gs.predict(features_test)
-acc = accuracy_score(labels_test, pred1)
-print('Accuracy: ' + str(acc))
-print('Precision: ', precision_score(labels_test, pred1))
-print('Recall: ', recall_score(labels_test, pred1))
-
-# Example starting point. Try investigating other evaluation techniques!
-from sklearn.model_selection import train_test_split
-features_train, features_test, labels_train, labels_test = \
-    train_test_split(features, labels, test_size=0.3, random_state=42)
 	
-clf_tree.fit(features_train, labels_train)
-pred2 = clf_tree.predict(features_test)	
+    features_train, features_test, labels_train, labels_test = \
+	    train_test_split(features, labels, test_size=0.2, random_state=42)
+		
+    clf_rfc_gs.fit(features_train, labels_train)	
 
-print("DecisionTreeClassifier:")
-print("Best Params", clf_tree.best_params_)
+    print("RandomForestClassifier:")
+    print("Best Params", clf_rfc_gs.best_params_)
 
-acc = accuracy_score(labels_test, pred2)
-print('Accuracy: ' + str(acc))
-print('Precision: ', precision_score(labels_test, pred2))
-print('Recall: ', recall_score(labels_test, pred2))
+    pred1 = clf_rfc_gs.predict(features_test)
+    acc = accuracy_score(labels_test, pred1)
+    print(pred1)
+    print('Accuracy: ' + str(acc))
+    print('Precision: ', precision_score(labels_test, pred1))
+    print('Recall: ', recall_score(labels_test, pred1))
+    print('F1_score: ', f1_score(labels_test, pred1))
+    clf_rfc_gs_f1.append(f1_score(labels_test, pred1))
+
+	###DecisionTreeClassifier
+    clf_tree.fit(features_train, labels_train)
+    pred2 = clf_tree.predict(features_test)	
+
+    print("DecisionTreeClassifier:")
+    print("Best Params", clf_tree.best_params_)
+
+    acc = accuracy_score(labels_test, pred2)
+    print('Accuracy: ' + str(acc))
+    print('Precision: ', precision_score(labels_test, pred2))
+    print('Recall: ', recall_score(labels_test, pred2))
+    print('F1_score: ', f1_score(labels_test, pred2))
+    clf_tree_f1.append(f1_score(labels_test, pred2))
+ 
+#print(clf_rfc_gs_f1)    
+#print(clf_tree_f1)
+
+x = list(range(3, 23))
+print(x)
+y1 = clf_rfc_gs_f1
+y2 = clf_tree_f1
+plt.plot(x, y1, label="RandomForestClassifier")
+plt.plot(x, y2, color='orange', label="DecisionTreeClassifier")
+plt.xlabel('Number of k features')
+plt.ylabel('F1 score')
+plt.title('F1 score x k best Features')
+plt.legend();
+plt.show()
+
 ### Task 6: Dump your classifier, dataset, and features_list so anyone can
 ### check your results. You do not need to change anything below, but make sure
 ### that the version of poi_id.py that you submit can be run on its own and
 ### generates the necessary .pkl files for validating your results.
 
 ###Método final utilizdo com os parâmetros definidos pelo gridSearch
-clf= RandomForestClassifier(bootstrap= False, criterion= 'entropy', max_features= 0.2, n_estimators= 50)
+
+features_list_new = features_list_new[:18]
+clf= RandomForestClassifier(bootstrap = False, criterion = 'gini', max_features= 'auto', n_estimators= 100)
 dump_classifier_and_data(clf, my_dataset, features_list_new)
